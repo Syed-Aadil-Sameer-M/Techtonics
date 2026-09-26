@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { useStore } from '@/store';
 import { ToastContainer } from '@/components/ui/Toast';
 import { LoginPage } from '@/pages/auth/LoginPage';
-import { CreateAccountPage } from '@/pages/auth/CreateAccountPage';
+import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
@@ -39,8 +39,16 @@ function ProtectedRoute({ children, allowedRoles }: { children: JSX.Element; all
   const currentUser = useStore(s => s.currentUser);
   const location = useLocation();
   if (!currentUser) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (currentUser.mustChangePassword) return <Navigate to="/change-password" replace />;
   if (!allowedRoles.includes(currentUser.role)) return <Navigate to={homeForRole(currentUser.role)} replace />;
   return children;
+}
+
+function ChangePasswordRoute() {
+  const currentUser = useStore(s => s.currentUser);
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (!currentUser.mustChangePassword) return <Navigate to={homeForRole(currentUser.role)} replace />;
+  return <ChangePasswordPage />;
 }
 
 export default function App() {
@@ -105,9 +113,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={currentUser ? <Navigate to={homeForRole(currentUser.role)} replace /> : <LandingPage />} />
-        <Route path="/login" element={currentUser ? <Navigate to={homeForRole(currentUser.role)} replace /> : <LoginPage />} />
-        <Route path="/create-account" element={<CreateAccountPage />} />
+        <Route path="/" element={currentUser ? <Navigate to={currentUser.mustChangePassword ? '/change-password' : homeForRole(currentUser.role)} replace /> : <LandingPage />} />
+        <Route path="/login" element={currentUser ? <Navigate to={currentUser.mustChangePassword ? '/change-password' : homeForRole(currentUser.role)} replace /> : <LoginPage />} />
+        <Route path="/change-password" element={<ChangePasswordRoute />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         {adminRoutes}
         {reqRoutes}

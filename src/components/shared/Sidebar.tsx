@@ -93,6 +93,8 @@ export function Sidebar() {
   const currentUser = useStore(s => s.currentUser);
   const collapsed = useStore(s => s.sidebarCollapsed);
   const toggle = useStore(s => s.toggleSidebar);
+  const mobileNavOpen = useStore(s => s.mobileNavOpen);
+  const closeMobileNav = useStore(s => s.closeMobileNav);
   const requests = useStore(s => s.requests);
   const notifications = useStore(s => s.notifications);
 
@@ -115,8 +117,9 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 h-screen glass border-r border-slate-800/60 flex flex-col transition-all duration-300 z-40',
-        collapsed ? 'w-20' : 'w-64'
+        'fixed left-0 top-0 h-screen glass border-r border-slate-800/60 flex flex-col transition-all duration-300 z-40 w-64',
+        collapsed ? 'lg:w-20' : 'lg:w-64',
+        mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}
     >
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800/40">
@@ -144,6 +147,7 @@ export function Sidebar() {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  onClick={closeMobileNav}
                   className={({ isActive }) =>
                     cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative',

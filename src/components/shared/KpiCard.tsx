@@ -38,7 +38,7 @@ export function KpiCard({ label, value, prefix, suffix, decimals, icon: Icon, tr
           </div>
         </div>
         <div className="space-y-1">
-          <p className={cn('text-2xl font-bold tracking-tight', c.text)}>
+          <p className={cn('text-xl sm:text-2xl font-bold tracking-tight', c.text)}>
             <CountUp value={value} prefix={prefix} suffix={suffix} decimals={decimals} />
           </p>
           <p className="text-sm text-slate-400">{label}</p>

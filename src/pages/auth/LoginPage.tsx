@@ -27,7 +27,7 @@ export function LoginPage() {
     try {
       await login(email, password);
       const user = useStore.getState().currentUser;
-      if (user) navigate(homeForRole(user.role));
+      if (user) navigate(user.mustChangePassword ? '/change-password' : homeForRole(user.role));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid email or password.');
     }
@@ -48,7 +48,7 @@ export function LoginPage() {
           <p className="text-sm text-slate-400 mt-1">Enterprise Procurement & Logistics</p>
         </div>
 
-        <div className="glass rounded-2xl p-8 shadow-2xl">
+        <div className="glass rounded-2xl p-6 sm:p-8 shadow-2xl">
           <h2 className="text-xl font-semibold text-white mb-1">Sign in</h2>
           <p className="text-sm text-slate-400 mb-6">Enter your credentials to access your workspace</p>
 
@@ -92,13 +92,6 @@ export function LoginPage() {
               )}
             </Button>
           </form>
-
-          <p className="text-xs text-slate-600 text-center mt-6">
-            Don't have an account?{' '}
-            <button onClick={() => navigate('/create-account')} className="text-sky-400 hover:text-sky-300">
-              Create one
-            </button>
-          </p>
         </div>
 
         <p className="text-center text-xs text-slate-600 mt-6">

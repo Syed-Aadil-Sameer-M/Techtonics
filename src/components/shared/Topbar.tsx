@@ -13,7 +13,7 @@ export function Topbar() {
   const markRead = useStore(s => s.markNotificationRead);
   const markAllRead = useStore(s => s.markAllNotificationsRead);
   const logout = useStore(s => s.logout);
-  const toggleSidebar = useStore(s => s.toggleSidebar);
+  const toggleMobileNav = useStore(s => s.toggleMobileNav);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -45,7 +45,7 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-30 glass border-b border-slate-800/60 px-4 py-3 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 flex-1 max-w-md">
-        <button onClick={toggleSidebar} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors lg:hidden">
+        <button onClick={toggleMobileNav} className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors lg:hidden">
           <Menu size={18} />
         </button>
         <div className="relative flex-1 hidden sm:block">
@@ -72,7 +72,7 @@ export function Topbar() {
             )}
           </button>
           {notifOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 glass rounded-2xl shadow-2xl border border-slate-800/60 animate-scale-in overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))] glass rounded-2xl shadow-2xl border border-slate-800/60 animate-scale-in overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800/60">
                 <p className="text-sm font-semibold text-white">Notifications</p>
                 {unreadCount > 0 && (

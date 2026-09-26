@@ -24,7 +24,7 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return createPortal(
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 max-w-sm">
+    <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 max-w-sm ml-auto">
       {toasts.map(toast => {
         const Icon = iconMap[toast.type];
         return (

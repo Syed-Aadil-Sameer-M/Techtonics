@@ -10,3 +10,14 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
     detectSessionInUrl: true,
   },
 });
+
+export function createEphemeralAuthClient(): SupabaseClient {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: `procurex-ephemeral-${Date.now()}`,
+    },
+  });
+}

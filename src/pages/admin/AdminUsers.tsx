@@ -6,15 +6,28 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/shared/Avatar';
+import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
+import { Input, Select } from '@/components/ui/Input';
 import { roleConfig, formatDate } from '@/lib/status';
 import { cn } from '@/lib/utils';
 import type { BackendRole } from '@/types';
 
 export function AdminUsers() {
   const users = useStore(s => s.users);
-  const fetchUsers = useStore(s => s.fetchUsers);
+  const createAdminUser = useStore(s => s.createAdminUser);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<BackendRole | 'all'>('all');
+  const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    department: '',
+    role: 'RECEIVER' as BackendRole,
+  });
 
   const filtered = users.filter(u => {
     const matchesSearch = !search ||
@@ -29,9 +42,39 @@ export function AdminUsers() {
   const receiverCount = users.filter(u => u.role === 'RECEIVER').length;
   const procurementCount = users.filter(u => u.role === 'PROCUREMENT').length;
 
+  const resetAddForm = () => {
+    setForm({ fullName: '', email: '', department: '', role: 'RECEIVER' });
+    setFormError('');
+    setTempPassword('');
+    setSaving(false);
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    if (form.fullName.trim().length < 2) return setFormError('Enter a full name.');
+    if (!form.department.trim()) return setFormError('Enter a department.');
+    setSaving(true);
+    try {
+      const password = await createAdminUser(form);
+      setTempPassword(password);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Could not create user.');
+    }
+    setSaving(false);
+  };
+
   return (
     <Layout>
-      <PageHeader title="User Management" subtitle="Manage workspace members and their roles" />
+      <PageHeader
+        title="User Management"
+        subtitle="Manage workspace members and their roles"
+        actions={
+          <Button onClick={() => { resetAddForm(); setShowAdd(true); }}>
+            <UserPlus size={16} /> Add User
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
@@ -59,8 +102,8 @@ export function AdminUsers() {
         ))}
       </div>
 
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div className="relative flex-1 w-full sm:max-w-xs">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
@@ -125,6 +168,38 @@ export function AdminUsers() {
           </table>
         </div>
       </Card>
+
+      <Dialog
+        open={showAdd}
+        onClose={() => { setShowAdd(false); resetAddForm(); }}
+        title="Add User"
+        description="Creates a login account with a temporary password"
+      >
+        {tempPassword ? (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-300">Share these credentials with the user. They must change the password on first sign-in.</p>
+            <p className="text-sm text-slate-200 break-all">Email: {form.email}</p>
+            <p className="text-sm text-slate-200">Temporary password: <span className="font-mono text-sky-300">{tempPassword}</span></p>
+            <Button className="w-full" onClick={() => { setShowAdd(false); resetAddForm(); }}>Done</Button>
+          </div>
+        ) : (
+          <form onSubmit={handleAddUser} className="space-y-4">
+            <Input label="Full name" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required />
+            <Input label="Email" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required />
+            <Input label="Department" value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} required />
+            <Select label="Role" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as BackendRole }))}>
+              <option value="RECEIVER">Receiver</option>
+              <option value="PROCUREMENT">Procurement Officer</option>
+              <option value="ADMIN">Administrator</option>
+            </Select>
+            {formError && <p className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-sm text-rose-300">{formError}</p>}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={() => { setShowAdd(false); resetAddForm(); }} className="flex-1">Cancel</Button>
+              <Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Creating...' : 'Create User'}</Button>
+            </div>
+          </form>
+        )}
+      </Dialog>
     </Layout>
   );
 }

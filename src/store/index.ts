@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/api';
+import { supabase, createEphemeralAuthClient } from '@/lib/api';
 import type {
   AuthUser, BackendRole, UserProfile, InventoryItem, Vendor,
   MaterialRequest, CreateRequestDTO, PurchaseOrder, PurchaseOrderStatus,
@@ -28,10 +28,10 @@ interface AppState {
 
   initAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: {
-    fullName: string; email: string; password: string;
-    role: BackendRole; department: string;
-  }) => Promise<'session' | 'confirm'>;
+  createAdminUser: (data: {
+    fullName: string; email: string; role: BackendRole; department: string;
+  }) => Promise<string>;
+  changePassword: (password: string) => Promise<void>;
   logout: () => Promise<void>;
 
   fetchUsers: () => Promise<void>;
@@ -63,6 +63,9 @@ interface AppState {
 
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  mobileNavOpen: boolean;
+  toggleMobileNav: () => void;
+  closeMobileNav: () => void;
 }
 
 const roleMap: Record<string, BackendRole> = {
@@ -83,7 +86,7 @@ function computeStockLevel(qty: number, reorder: number): StockLevel {
   return 'OK';
 }
 
-function mapProfileToAuth(p: { id: string; name: string; department: string; role: string }): AuthUser {
+function mapProfileToAuth(p: { id: string; name: string; department: string; role: string; must_change_password?: boolean }): AuthUser {
   return {
     id: p.id,
     userId: p.id,
@@ -92,6 +95,7 @@ function mapProfileToAuth(p: { id: string; name: string; department: string; rol
     username: p.name,
     role: roleMap[p.role] || 'RECEIVER',
     department: p.department,
+    mustChangePassword: !!p.must_change_password,
   };
 }
 
@@ -274,6 +278,7 @@ export const useStore = create<AppState>((set, get) => ({
   loading: false,
   error: null,
   sidebarCollapsed: false,
+  mobileNavOpen: false,
 
   initAuth: async () => {
     try {
@@ -293,6 +298,7 @@ export const useStore = create<AppState>((set, get) => ({
         username: profile.name,
         role: roleMap[profile.role] || 'RECEIVER',
         department: profile.department,
+        mustChangePassword: !!profile.must_change_password,
       };
       set({ currentUser: authUser });
     } catch (error) {
@@ -329,15 +335,17 @@ export const useStore = create<AppState>((set, get) => ({
       username: profile.name,
       role: roleMap[profile.role] || 'RECEIVER',
       department: profile.department,
+      mustChangePassword: !!profile.must_change_password,
     };
     set({ currentUser: authUser, loading: false });
   },
 
-  register: async (data) => {
-    set({ error: null, loading: true });
-    const { data: authData, error } = await supabase.auth.signUp({
+  createAdminUser: async (data) => {
+    const tempPassword = 'TempPass123!';
+    const ephemeral = createEphemeralAuthClient();
+    const { data: authData, error } = await ephemeral.auth.signUp({
       email: data.email,
-      password: data.password,
+      password: tempPassword,
       options: {
         data: {
           fullName: data.fullName,
@@ -346,32 +354,31 @@ export const useStore = create<AppState>((set, get) => ({
         },
       },
     });
-    if (error) {
-      set({ loading: false, error: error.message });
-      throw new Error(error.message);
-    }
+    await ephemeral.auth.signOut();
+    if (error) throw new Error(error.message);
     const userId = authData.user?.id;
-    if (!userId) {
-      set({ loading: false });
-      throw new Error('No user id returned');
+    if (userId) {
+      await supabase.from('procurex_profiles').update({ must_change_password: true }).eq('id', userId);
     }
-    // If email confirmation is required, there's no session yet.
-    // The profile row is created automatically by a database trigger.
-    if (!authData.session) {
-      set({ loading: false });
-      return 'confirm';
-    }
-    const authUser: AuthUser = {
-      id: userId,
-      userId,
-      email: data.email,
-      name: data.fullName,
-      username: data.fullName,
-      role: data.role,
-      department: data.department,
-    };
-    set({ currentUser: authUser, loading: false });
-    return 'session';
+    await get().fetchUsers();
+    get().addToast('success', `User created. Temporary password: ${tempPassword}`);
+    return tempPassword;
+  },
+
+  changePassword: async (password) => {
+    const user = get().currentUser;
+    if (!user) throw new Error('Not authenticated');
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw new Error(error.message);
+    const { error: profileError } = await supabase
+      .from('procurex_profiles')
+      .update({ must_change_password: false })
+      .eq('id', user.id);
+    if (profileError) throw new Error(profileError.message);
+    set(state => ({
+      currentUser: state.currentUser ? { ...state.currentUser, mustChangePassword: false } : null,
+    }));
+    get().addToast('success', 'Password updated');
   },
 
   logout: async () => {
@@ -607,5 +614,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   toggleSidebar: () => {
     set(state => ({ sidebarCollapsed: !state.sidebarCollapsed }));
+  },
+
+  toggleMobileNav: () => {
+    set(state => ({ mobileNavOpen: !state.mobileNavOpen }));
+  },
+
+  closeMobileNav: () => {
+    set({ mobileNavOpen: false });
   },
 }));

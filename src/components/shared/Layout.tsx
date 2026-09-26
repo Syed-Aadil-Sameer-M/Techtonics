@@ -10,14 +10,24 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const collapsed = useStore(s => s.sidebarCollapsed);
+  const mobileNavOpen = useStore(s => s.mobileNavOpen);
+  const closeMobileNav = useStore(s => s.closeMobileNav);
 
   return (
-    <div className="min-h-screen bg-slate-950 bg-grid">
+    <div className="min-h-screen bg-slate-950 bg-grid overflow-x-hidden">
+      {mobileNavOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-30 bg-slate-950/70 lg:hidden"
+          onClick={closeMobileNav}
+        />
+      )}
       <Sidebar />
       <div
         className={cn(
-          'transition-all duration-300',
-          collapsed ? 'ml-20' : 'ml-64'
+          'transition-all duration-300 min-w-0',
+          collapsed ? 'lg:ml-20' : 'lg:ml-64'
         )}
       >
         <Topbar />

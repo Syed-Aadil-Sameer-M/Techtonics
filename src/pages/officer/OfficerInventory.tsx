@@ -146,7 +146,7 @@ export function OfficerInventory() {
           <div className="space-y-4">
             <Input label="Item Name" value={name} onChange={e => setName(e.target.value)} />
             <Input label="Unit" value={unit} onChange={e => setUnit(e.target.value)} placeholder="pcs, kg, L" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input label="Quantity" type="number" value={qty} onChange={e => setQty(parseInt(e.target.value) || 0)} />
               <Input label="Reorder Level" type="number" value={reorderLevel} onChange={e => setReorderLevel(parseInt(e.target.value) || 0)} />
             </div>
@@ -162,7 +162,7 @@ export function OfficerInventory() {
       <Dialog open={showAdd} onClose={() => setShowAdd(false)} title="Add Inventory Item">
         <div className="space-y-4">
           <Input label="Item Name" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Quantity" type="number" value={newItem.quantity} onChange={e => setNewItem(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))} />
             <Input label="Unit" value={newItem.unit} onChange={e => setNewItem(p => ({ ...p, unit: e.target.value }))} placeholder="pcs, kg, L" />
             <Input label="Price per Unit (₹)" type="number" value={newItem.unitPrice} onChange={e => setNewItem(p => ({ ...p, unitPrice: parseFloat(e.target.value) || 0 }))} />

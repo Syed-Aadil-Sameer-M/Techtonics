@@ -14,14 +14,13 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 bg-grid">
       <header className="sticky top-0 z-30 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between gap-3">
           <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/20"><PackageCheck size={22} /></span>
             <span><span className="block text-lg font-bold tracking-tight">ProcureX</span><span className="block text-[10px] text-slate-500 uppercase tracking-[0.2em]">Procurement OS</span></span>
           </button>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate('/login')}>Sign in</Button>
-            <Button onClick={() => navigate('/create-account')}>Create account <ArrowRight size={16} /></Button>
+            <Button onClick={() => navigate('/login')}>Sign in <ArrowRight size={16} /></Button>
           </div>
         </div>
       </header>
@@ -30,9 +29,9 @@ export function LandingPage() {
         <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-20 pb-24 grid lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
           <div className="animate-fade-in-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-sky-500/20 bg-sky-500/5 text-xs text-sky-300 mb-6"><span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Procurement operations, brought together</div>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">Move every purchase <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-cyan-300">forward.</span></h1>
-            <p className="mt-6 text-lg text-slate-400 max-w-xl leading-8">ProcureX connects requests, approvals, suppliers, inventory, orders, and dispatch in one calm, accountable workspace.</p>
-            <div className="mt-8 flex flex-wrap gap-3"><Button size="lg" onClick={() => navigate('/create-account')}>Start for free <ArrowRight size={18} /></Button><Button size="lg" variant="outline" onClick={() => navigate('/login')}>Explore the workspace</Button></div>
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">Move every purchase <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-cyan-300">forward.</span></h1>
+            <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-xl leading-8">ProcureX connects requests, approvals, suppliers, inventory, orders, and dispatch in one calm, accountable workspace.</p>
+            <div className="mt-8 flex flex-wrap gap-3"><Button size="lg" onClick={() => navigate('/login')}>Sign in <ArrowRight size={18} /></Button><Button size="lg" variant="outline" onClick={() => navigate('/login')}>Explore the workspace</Button></div>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-500"><span className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-400" /> Role-based workflows</span><span className="flex items-center gap-2"><ShieldCheck size={16} className="text-sky-400" /> Audit-ready activity</span></div>
           </div>
           <div className="relative animate-fade-in-up" style={{ animationDelay: '120ms' }}>
@@ -55,7 +54,7 @@ export function LandingPage() {
 
         <section className="max-w-7xl mx-auto px-5 sm:px-8 py-24"><div className="max-w-2xl mb-12"><p className="text-xs text-sky-300 uppercase tracking-[0.2em] font-semibold">One connected flow</p><h2 className="text-3xl sm:text-4xl font-bold text-white mt-3">Less chasing. More certainty.</h2><p className="text-slate-400 mt-4 leading-7">Make the next step obvious for the people who request, review, buy, receive, and use what your organization needs.</p></div><div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">{features.map(feature => <div key={feature.title} className="group p-5 rounded-2xl border border-slate-800/80 bg-slate-900/40 hover:border-sky-500/30 hover:bg-slate-900/70 transition-all"><div className="w-11 h-11 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-300 group-hover:scale-105 transition-transform"><feature.icon size={20} /></div><h3 className="mt-5 font-semibold text-white">{feature.title}</h3><p className="mt-2 text-sm text-slate-500 leading-6">{feature.text}</p></div>)}</div></section>
 
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pb-24"><div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-8 sm:p-12 grid lg:grid-cols-[1fr_auto] gap-8 items-center"><div><p className="text-xs text-cyan-300 uppercase tracking-[0.2em] font-semibold">Ready when you are</p><h2 className="text-3xl font-bold text-white mt-3">Give procurement a clear operating rhythm.</h2><p className="text-slate-400 mt-3 max-w-2xl">Create your workspace, choose your role, and start with a request that everyone can follow.</p></div><Button size="lg" onClick={() => navigate('/create-account')}>Create your account <ArrowRight size={18} /></Button></div></section>
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pb-24"><div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-8 sm:p-12 grid lg:grid-cols-[1fr_auto] gap-8 items-center"><div><p className="text-xs text-cyan-300 uppercase tracking-[0.2em] font-semibold">Ready when you are</p><h2 className="text-2xl sm:text-3xl font-bold text-white mt-3">Give procurement a clear operating rhythm.</h2><p className="text-slate-400 mt-3 max-w-2xl">Sign in to your workspace and start with a request that everyone can follow.</p></div><Button size="lg" onClick={() => navigate('/login')}>Sign in <ArrowRight size={18} /></Button></div></section>
       </main>
       <footer className="border-t border-slate-800/60"><div className="max-w-7xl mx-auto px-5 sm:px-8 py-6 flex flex-col sm:flex-row gap-3 items-center justify-between text-xs text-slate-600"><span>ProcureX · Procurement & Logistics Workspace</span><span>Built for clearer decisions and smoother delivery.</span></div></footer>
     </div>
