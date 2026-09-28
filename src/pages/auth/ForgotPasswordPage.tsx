@@ -3,18 +3,30 @@ import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { supabase } from '@/lib/api';
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
-    setSent(true);
-    setLoading(false);
+    setError('');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/change-password`,
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,6 +52,7 @@ export function ForgotPasswordPage() {
               <p className="text-sm text-slate-400 mt-2 mb-6">Enter your work email and we'll send you a reset link.</p>
               <form onSubmit={submit} className="space-y-4">
                 <Input label="Work email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" required />
+                {error && <p className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-sm text-rose-300">{error}</p>}
                 <Button type="submit" size="lg" className="w-full" disabled={loading}>
                   {loading ? 'Sending...' : 'Send reset link'}
                 </Button>
