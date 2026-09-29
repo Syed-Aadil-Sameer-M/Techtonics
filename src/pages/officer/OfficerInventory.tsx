@@ -10,8 +10,8 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { stockLevelConfig, formatCurrency } from '@/lib/status';
 import type { InventoryItem } from '@/types';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
 export function OfficerInventory() {
   const inventory = useStore(s => s.inventory);
@@ -34,11 +34,7 @@ export function OfficerInventory() {
     !search || i.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const exportInventory = () =>
-    downloadCsv('procurex-inventory.csv',
-      ['SKU', 'Name', 'Quantity', 'Unit', 'Reorder Level', 'Unit Price', 'Stock Level'],
-      filtered.map(i => [i.sku, i.name, i.quantity, i.unit, i.reorderLevel, formatCurrency(i.unitPrice), i.stockLevel])
-    );
+
 
   const handleEdit = (item: InventoryItem) => {
     setEditItem(item);
@@ -71,6 +67,12 @@ export function OfficerInventory() {
     }
   };
 
+  const HEADERS = ['SKU', 'Name', 'Category', 'Qty', 'Unit', 'Reorder Level', 'Unit Price', 'Stock Level'];
+  const toRows = (items: typeof inventory) =>
+    items.map(i => [i.sku, i.name, i.category, i.quantity, i.unit, i.reorderLevel, i.unitPrice, i.stockLevel]);
+  // Inventory has no date field - export all (date filter shows no effect but UI stays consistent)
+  const getFiltered = (_r: DateRange) => inventory.filter(i => !search || i.name.toLowerCase().includes(search.toLowerCase()));
+  const label = (r: DateRange) => r.from || r.to ? `${r.from || 'start'}_to_${r.to || 'today'}` : 'all';
   return (
     <Layout>
       <PageHeader
@@ -79,7 +81,11 @@ export function OfficerInventory() {
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => setShowAdd(true)}><Plus size={14} /> Add Item</Button>
-            <ExportButton onCsv={exportInventory} />
+            <ExportButton
+              onCsv={r => downloadCsv(`procurex-inventory-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+              onExcel={r => downloadExcel(`procurex-inventory-${label(r)}`, 'Inventory', HEADERS, toRows(getFiltered(r)))}
+              onPdf={r => downloadPdf(`procurex-inventory-${label(r)}`, 'Inventory', 'Current inventory status', HEADERS, toRows(getFiltered(r)), r)}
+            />
           </div>
         }
       />

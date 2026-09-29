@@ -7,8 +7,8 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 import type { Vendor } from '@/types';
 
 export function OfficerSuppliers() {
@@ -24,11 +24,7 @@ export function OfficerSuppliers() {
     !search || v.name.toLowerCase().includes(search.toLowerCase()) || (v.contactName || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const exportVendors = () =>
-    downloadCsv('procurex-vendors.csv',
-      ['ID', 'Name', 'Contact', 'Email', 'Phone'],
-      filtered.map(v => [v.id, v.name, v.contactName || '', v.email || '', v.phone || ''])
-    );
+
 
   const handleEdit = (v: Vendor) => {
     setEditVendor(v);
@@ -50,6 +46,10 @@ export function OfficerSuppliers() {
     }
   };
 
+  const HEADERS = ['Name', 'Contact', 'Email', 'Phone', 'Status'];
+  const toRows = (items: typeof vendors) => items.map(item => [item.name, item.contactPerson || item.contactName, item.email, item.phone, item.status]);
+  const getFiltered = (r: DateRange) => filterByDateRange(vendors, item => item.joinedDate, r.from, r.to);
+  const label = (r: DateRange) => r.from || r.to ? `${r.from || 'start'}_to_${r.to || 'today'}` : 'all';
   return (
     <Layout>
       <PageHeader
@@ -58,7 +58,11 @@ export function OfficerSuppliers() {
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => setShowAdd(true)}><Plus size={14} /> Add Vendor</Button>
-            <ExportButton onCsv={exportVendors} />
+            <ExportButton
+              onCsv={r => downloadCsv(`procurex-suppliers-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+              onExcel={r => downloadExcel(`procurex-suppliers-${label(r)}`, 'Suppliers', HEADERS, toRows(getFiltered(r)))}
+              onPdf={r => downloadPdf(`procurex-suppliers-${label(r)}`, 'Suppliers', 'Vendor directory', HEADERS, toRows(getFiltered(r)), r)}
+            />
           </div>
         }
       />

@@ -7,8 +7,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { formatDateTime } from '@/lib/status';
 import { cn } from '@/lib/utils';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
 const actionColors: Record<string, { color: string; bg: string }> = {
   APPROVE: { color: 'text-emerald-300', bg: 'bg-emerald-500/10 border-emerald-500/30' },
@@ -40,9 +40,17 @@ export function AdminAudit() {
     );
   };
 
+  const HEADERS = ['Action', 'Module', 'Description', 'User', 'Timestamp'];
+  const toRows = (items: typeof auditLogs) => items.map(item => [item.action, item.module, item.description, item.user, item.timestamp]);
+  const getFiltered = (r: DateRange) => filterByDateRange(auditLogs, item => item.timestamp, r.from, r.to);
+  const label = (r: DateRange) => r.from || r.to ? `${r.from || 'start'}_to_${r.to || 'today'}` : 'all';
   return (
     <Layout>
-      <PageHeader title="Audit Log" subtitle="System activity and change history" actions={<ExportButton onCsv={exportAudit} />} />
+      <PageHeader title="Audit Log" subtitle="System activity and change history" actions={<ExportButton
+        onCsv={r => downloadCsv(`procurex-audit-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+        onExcel={r => downloadExcel(`procurex-audit-${label(r)}`, 'Audit Log', HEADERS, toRows(getFiltered(r)))}
+        onPdf={r => downloadPdf(`procurex-audit-${label(r)}`, 'Audit Log', 'System activity and change history', HEADERS, toRows(getFiltered(r)), r)}
+      />} />
 
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">

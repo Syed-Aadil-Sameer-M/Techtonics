@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { FileCheck, Filter } from 'lucide-react';
+import { FileCheck } from 'lucide-react';
 import { useStore } from '@/store';
 import { Layout } from '@/components/shared/Layout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { RequestDetailDrawer } from '@/components/shared/PRDetailDrawer';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
 import { requestStatusConfig, formatDate } from '@/lib/status';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 import { cn } from '@/lib/utils';
 import type { RequestStatus } from '@/types';
 
@@ -15,7 +17,7 @@ export function AdminApprovals() {
   const [filter, setFilter] = useState<RequestStatus | 'all'>('all');
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
 
-  const filtered = filter === 'all' ? requests : requests.filter(r => r.status === filter);
+  const filtered = (filter === 'all' ? requests : requests.filter(r => r.status === filter));
 
   const tabs: { key: RequestStatus | 'all'; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: requests.length },
@@ -25,9 +27,32 @@ export function AdminApprovals() {
     { key: 'COMPLETED', label: 'Completed', count: requests.filter(r => r.status === 'COMPLETED').length },
   ];
 
+  const HEADERS = ['PR #', 'Material', 'Qty', 'Location', 'Requested By', 'Department', 'Status', 'Date'];
+  const toRows = (items: typeof requests) =>
+    items.map(r => [r.prNumber, r.material, r.quantity, r.location, r.requestedBy, r.department, r.status, formatDate(r.date)]);
+
+  const getFiltered = (range: DateRange) => {
+    const base = filter === 'all' ? requests : requests.filter(r => r.status === filter);
+    return filterByDateRange(base, r => r.date, range.from, range.to);
+  };
+
+  const label = (range: DateRange) => range.from || range.to
+    ? `${range.from || 'start'}_to_${range.to || 'today'}`
+    : 'all';
+
   return (
     <Layout>
-      <PageHeader title="Approvals" subtitle="Review and act on material requests" />
+      <PageHeader
+        title="Approvals"
+        subtitle="Review and act on material requests"
+        actions={
+          <ExportButton
+            onCsv={r => downloadCsv(`procurex-approvals-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+            onExcel={r => downloadExcel(`procurex-approvals-${label(r)}`, 'Approvals', HEADERS, toRows(getFiltered(r)))}
+            onPdf={r => downloadPdf(`procurex-approvals-${label(r)}`, 'Approvals', 'Purchase request approvals', HEADERS, toRows(getFiltered(r)), r)}
+          />
+        }
+      />
 
       <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-thin">
         {tabs.map(tab => (
@@ -35,10 +60,10 @@ export function AdminApprovals() {
             key={tab.key}
             onClick={() => setFilter(tab.key)}
             className={cn(
-              'px-3.5 py-2 rounded-xl text-sm font-medium transition-all border',
+              'px-3.5 py-2 rounded-xl text-sm font-medium transition-all border whitespace-nowrap',
               filter === tab.key
                 ? 'bg-sky-500/10 text-sky-300 border-sky-500/30'
-                : 'text-slate-400 hover:text-slate-200 border-slate-800 hover:border-slate-700'
+                : 'text-slate-400 hover:text-slate-200 border-slate-800 hover:border-slate-700',
             )}
           >
             {tab.label}
@@ -78,7 +103,7 @@ export function AdminApprovals() {
                     >
                       <td className="px-5 py-3.5">
                         <p className="text-slate-200 font-medium">{req.material}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">#{req.id} · Qty: {req.quantity}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{req.prNumber} · Qty: {req.quantity}</p>
                       </td>
                       <td className="px-5 py-3.5 hidden sm:table-cell text-slate-400">{req.location}</td>
                       <td className="px-5 py-3.5 hidden md:table-cell text-slate-400">{req.requestedBy || '—'}</td>

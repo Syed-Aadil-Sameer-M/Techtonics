@@ -10,8 +10,8 @@ import { Dialog } from '@/components/ui/Dialog';
 import { poStatusConfig, formatDate } from '@/lib/status';
 import { cn } from '@/lib/utils';
 import type { PurchaseOrderStatus, PurchaseOrder } from '@/types';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
 export function OfficerPurchaseOrders() {
   const pos = useStore(s => s.purchaseOrders);
@@ -21,11 +21,7 @@ export function OfficerPurchaseOrders() {
 
   const filtered = filter === 'all' ? pos : pos.filter(p => p.status === filter);
 
-  const exportOrders = () =>
-    downloadCsv('procurex-purchase-orders.csv',
-      ['PO ID', 'Material', 'Vendor', 'Quantity', 'Status', 'Date'],
-      filtered.map(po => [po.poNumber, po.material, po.supplier, po.quantity, po.status, formatDate(po.createdAt)])
-    );
+
 
   const statusOptions: { key: PurchaseOrderStatus | 'all'; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -43,9 +39,17 @@ export function OfficerPurchaseOrders() {
     }
   };
 
+  const HEADERS = ['PO Number', 'Material', 'Vendor', 'Qty', 'Status', 'Date'];
+  const toRows = (items: typeof pos) => items.map(item => [item.poNumber || item.id, item.material, item.vendor, item.quantity, item.status, item.date]);
+  const getFiltered = (r: DateRange) => filterByDateRange(pos, item => item.date, r.from, r.to);
+  const label = (r: DateRange) => r.from || r.to ? `${r.from || 'start'}_to_${r.to || 'today'}` : 'all';
   return (
     <Layout>
-      <PageHeader title="Purchase Orders" subtitle="Manage POs — track deliveries and update status" actions={<ExportButton onCsv={exportOrders} />} />
+      <PageHeader title="Purchase Orders" subtitle="Manage POs — track deliveries and update status" actions={<ExportButton
+        onCsv={r => downloadCsv(`procurex-pos-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+        onExcel={r => downloadExcel(`procurex-pos-${label(r)}`, 'Purchase Orders', HEADERS, toRows(getFiltered(r)))}
+        onPdf={r => downloadPdf(`procurex-pos-${label(r)}`, 'Purchase Orders', 'Officer purchase orders', HEADERS, toRows(getFiltered(r)), r)}
+      />} />
 
       <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-thin">
         {statusOptions.map(opt => (

@@ -10,8 +10,8 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { requestStatusConfig, formatDate, formatDateTime } from '@/lib/status';
 import type { MaterialRequest } from '@/types';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
 export function OfficerDispatch() {
   const requests = useStore(s => s.requests);
@@ -23,11 +23,7 @@ export function OfficerDispatch() {
   const readyForDispatch = requests.filter(r => r.status === 'APPROVED');
   const dispatched = requests.filter(r => r.status === 'COMPLETED');
 
-  const exportDispatches = () =>
-    downloadCsv('procurex-dispatch.csv',
-      ['Request ID', 'Material', 'Location', 'Quantity', 'Requested By', 'Date'],
-      dispatched.map(r => [r.id, r.material, r.location, r.quantity, r.requestedBy || '', formatDate(r.date)])
-    );
+
 
   const handleConfirmDispatch = () => {
     if (dispatchReq) {
@@ -37,9 +33,17 @@ export function OfficerDispatch() {
     }
   };
 
+  const HEADERS = ['PO Number', 'Material', 'Vendor', 'Qty', 'Status', 'Date'];
+  const toRows = (items: typeof purchaseOrders) => items.map(item => [item.poNumber || item.id, item.material, item.vendor, item.quantity, item.status, item.date]);
+  const getFiltered = (r: DateRange) => filterByDateRange(purchaseOrders, item => item.date, r.from, r.to);
+  const label = (r: DateRange) => r.from || r.to ? `${r.from || 'start'}_to_${r.to || 'today'}` : 'all';
   return (
     <Layout>
-      <PageHeader title="Dispatch" subtitle="Dispatch approved materials to requesters" actions={<ExportButton onCsv={exportDispatches} />} />
+      <PageHeader title="Dispatch" subtitle="Dispatch approved materials to requesters" actions={<ExportButton
+        onCsv={r => downloadCsv(`procurex-dispatch-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+        onExcel={r => downloadExcel(`procurex-dispatch-${label(r)}`, 'Dispatch', HEADERS, toRows(getFiltered(r)))}
+        onPdf={r => downloadPdf(`procurex-dispatch-${label(r)}`, 'Dispatch', 'Dispatch records', HEADERS, toRows(getFiltered(r)), r)}
+      />} />
 
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-white mb-3">Ready for Dispatch</h3>

@@ -11,8 +11,8 @@ import { RequestDetailDrawer } from '@/components/shared/PRDetailDrawer';
 import { requestStatusConfig, formatDate } from '@/lib/status';
 import { cn } from '@/lib/utils';
 import type { RequestStatus } from '@/types';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
 export function ReqRequests() {
   const navigate = useNavigate();
@@ -27,11 +27,7 @@ export function ReqRequests() {
     return true;
   });
 
-  const exportRequests = () =>
-    downloadCsv('procurex-my-requests.csv',
-      ['Request ID', 'Material', 'Location', 'Quantity', 'Status', 'Date'],
-      filtered.map(r => [r.id, r.material, r.location, r.quantity, r.status, formatDate(r.date)])
-    );
+
 
   const statusFilters: { key: RequestStatus | 'all'; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -41,6 +37,10 @@ export function ReqRequests() {
     { key: 'COMPLETED', label: 'Completed' },
   ];
 
+  const HEADERS = ['PR #', 'Material', 'Qty', 'Location', 'Status', 'Date'];
+  const toRows = (items: typeof requests) => items.map(item => [item.prNumber, item.material, item.quantity, item.location, item.status, item.date]);
+  const getFiltered = (dr: DateRange) => filterByDateRange(requests, item => item.date, dr.from, dr.to);
+  const label = (dr: DateRange) => dr.from || dr.to ? `${dr.from || 'start'}_to_${dr.to || 'today'}` : 'all';
   return (
     <Layout>
       <PageHeader
@@ -48,7 +48,11 @@ export function ReqRequests() {
         subtitle="Track and manage your material requests"
         actions={
           <div className="flex items-center gap-2">
-            <ExportButton onCsv={exportRequests} />
+            <ExportButton
+              onCsv={r => downloadCsv(`procurex-requests-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+              onExcel={r => downloadExcel(`procurex-requests-${label(r)}`, 'My Requests', HEADERS, toRows(getFiltered(r)))}
+              onPdf={r => downloadPdf(`procurex-requests-${label(r)}`, 'My Requests', 'Purchase requests', HEADERS, toRows(getFiltered(r)), r)}
+            />
             <Button onClick={() => navigate('/req/new-request')}><Plus size={16} /> New Request</Button>
           </div>
         }

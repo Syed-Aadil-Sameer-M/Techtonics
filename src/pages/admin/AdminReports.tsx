@@ -6,8 +6,8 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { KpiCard } from '@/components/shared/KpiCard';
 import { Card } from '@/components/ui/Card';
 import { formatCurrency } from '@/lib/status';
-import { ExportButton } from '@/components/shared/ExportButton';
-import { downloadCsv } from '@/lib/export';
+import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
+import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
 const monthlySpend = [
   { month: 'Jan', spend: 420000, orders: 8 },
@@ -44,21 +44,19 @@ export function AdminReports() {
   const completedRequests = requests.filter(r => r.status === 'COMPLETED').length;
   const approvalRate = requests.length > 0 ? Math.round((completedRequests / requests.length) * 100) : 0;
 
-  const exportReport = () => {
-    downloadCsv('procurex-report.csv',
-      ['Metric', 'Value'],
-      [
-        ['Total Orders', totalOrders],
-        ['Pending Requests', pendingRequests],
-        ['Completed Requests', completedRequests],
-        ['Approval Rate (%)', approvalRate],
-      ]
-    );
-  };
 
+
+  const HEADERS = ['PR #', 'Material', 'Qty', 'Department', 'Status', 'Date'];
+  const toRows = (items: typeof requests) => items.map(item => [item.prNumber, item.material, item.quantity, item.department, item.status, item.date]);
+  const getFiltered = (dr: DateRange) => filterByDateRange(requests, item => item.date, dr.from, dr.to);
+  const label = (dr: DateRange) => dr.from || dr.to ? `${dr.from || 'start'}_to_${dr.to || 'today'}` : 'all';
   return (
     <Layout>
-      <PageHeader title="Reports" subtitle="Procurement analytics and insights" actions={<ExportButton onCsv={exportReport} />} />
+      <PageHeader title="Reports" subtitle="Procurement analytics and insights" actions={<ExportButton
+        onCsv={r => downloadCsv(`procurex-report-${label(r)}.csv`, HEADERS, toRows(getFiltered(r)))}
+        onExcel={r => downloadExcel(`procurex-report-${label(r)}`, 'Reports', HEADERS, toRows(getFiltered(r)))}
+        onPdf={r => downloadPdf(`procurex-report-${label(r)}`, 'Reports', 'Procurement analytics', HEADERS, toRows(getFiltered(r)), r)}
+      />} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard icon={TrendingUp} label="Total Orders" value={totalOrders} accent="sky" />
