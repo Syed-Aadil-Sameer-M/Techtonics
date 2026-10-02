@@ -32,9 +32,7 @@ all procurement data without signing in. This removes that access.
 - RLS remains enabled on all tables.
 */
 
-REVOKE ALL ON procurex_app_state FROM anon;
 REVOKE ALL ON procurex_audit_logs FROM anon;
-REVOKE ALL ON procurex_dispatches FROM anon;
 REVOKE ALL ON procurex_inventory FROM anon;
 REVOKE ALL ON procurex_notifications FROM anon;
 REVOKE ALL ON procurex_profiles FROM anon;
@@ -42,4 +40,3 @@ REVOKE ALL ON procurex_purchase_orders FROM anon;
 REVOKE ALL ON procurex_purchase_requests FROM anon;
 REVOKE ALL ON procurex_suppliers FROM anon;
 REVOKE ALL ON procurex_tasks FROM anon;
-REVOKE ALL ON procurex_users FROM anon;

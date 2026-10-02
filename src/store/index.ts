@@ -29,7 +29,7 @@ interface AppState {
   initAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   createAdminUser: (data: {
-    fullName: string; email: string; role: BackendRole; department: string;
+    fullName: string; email: string; role: BackendRole; department: string; phoneNumber?: string;
   }) => Promise<string>;
   changePassword: (password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -70,8 +70,11 @@ interface AppState {
 
 const roleMap: Record<string, BackendRole> = {
   admin: 'ADMIN',
+  ADMIN: 'ADMIN',
   requisitioner: 'RECEIVER',
+  RECEIVER: 'RECEIVER',
   procurement_officer: 'PROCUREMENT',
+  PROCUREMENT: 'PROCUREMENT',
 };
 
 const reverseRoleMap: Record<BackendRole, string> = {
@@ -254,7 +257,7 @@ function mapProfileRow(row: Record<string, unknown>): UserProfile {
     username: name,
     fullName: name,
     email: '',
-    phoneNumber: '',
+    phoneNumber: (row.phone_number as string) || '',
     department: row.department as string,
     role: roleMap[row.role as string] || 'RECEIVER',
     status: row.status as string,
@@ -350,7 +353,7 @@ export const useStore = create<AppState>((set, get) => ({
         data: {
           fullName: data.fullName,
           department: data.department,
-          role: reverseRoleMap[data.role],
+          role: data.role,
         },
       },
     });
@@ -358,7 +361,11 @@ export const useStore = create<AppState>((set, get) => ({
     if (error) throw new Error(error.message);
     const userId = authData.user?.id;
     if (userId) {
-      await supabase.from('procurex_profiles').update({ must_change_password: true }).eq('id', userId);
+      await supabase.from('procurex_profiles').update({ 
+        must_change_password: true,
+        role: data.role,
+        phone_number: data.phoneNumber
+      }).eq('id', userId);
     }
     await get().fetchUsers();
     get().addToast('success', `User created. Temporary password: ${tempPassword}`);
@@ -458,18 +465,55 @@ export const useStore = create<AppState>((set, get) => ({
       location: data.location,
       created_at: now,
       updated_at: now,
-      needed_by: '',
+      needed_by: data.neededBy || null,
       total_value: 0,
     }).select('*').single();
     if (error) { get().addToast('error', 'Failed to create request'); throw new Error(error.message); }
+
+    // Create a task for Admins to review the new request
+    const { data: adminProfiles } = await supabase.from('procurex_profiles').select('id').eq('role', 'ADMIN');
+    if (adminProfiles && adminProfiles.length > 0) {
+      await Promise.all(adminProfiles.map(admin => 
+        supabase.from('procurex_tasks').insert({
+          type: 'APPROVAL',
+          title: `Approve Request: ${prNumber}`,
+          description: `${user.name} requested ${data.quantity}x ${data.material}. Deadline: ${data.neededBy || 'None'}`,
+          assignee_id: admin.id,
+          assignee_name: 'Administrator',
+          related_id: row.id,
+          related_type: 'REQUEST',
+          status: 'PENDING',
+          priority: 'high',
+          due_date: data.neededBy || now,
+          created_at: now
+        })
+      ));
+    }
+
     set(state => ({ requests: [mapRequestRow(row as Record<string, unknown>), ...state.requests] }));
     get().addToast('success', 'Request submitted successfully');
   },
 
   updateRequestStatus: async (id, status) => {
+    const user = get().currentUser;
     const { error } = await supabase.from('procurex_purchase_requests')
       .update({ status, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) { get().addToast('error', 'Failed to update request'); return; }
+    
+    if (user) {
+      await supabase.from('procurex_audit_logs').insert({
+        actor: user.name,
+        actor_role: user.role,
+        action: `Status updated to ${status}`,
+        resource: 'REQUEST',
+        resource_id: id,
+        details: `Request ${id.slice(0, 8)} status changed to ${status}`,
+        timestamp: new Date().toISOString(),
+        ip_address: '0.0.0.0'
+      });
+      get().fetchAuditLogs();
+    }
+
     set(state => ({
       requests: state.requests.map(r => r.id === id ? { ...r, status } : r),
     }));
@@ -477,9 +521,25 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updatePOStatus: async (id, status) => {
+    const user = get().currentUser;
     const { error } = await supabase.from('procurex_purchase_orders')
       .update({ status }).eq('id', id);
     if (error) { get().addToast('error', 'Failed to update PO'); return; }
+    
+    if (user) {
+      await supabase.from('procurex_audit_logs').insert({
+        actor: user.name,
+        actor_role: user.role,
+        action: `Status updated to ${status}`,
+        resource: 'PURCHASE_ORDER',
+        resource_id: id,
+        details: `Purchase Order ${id.slice(0, 8)} status changed to ${status}`,
+        timestamp: new Date().toISOString(),
+        ip_address: '0.0.0.0'
+      });
+      get().fetchAuditLogs();
+    }
+
     set(state => ({
       purchaseOrders: state.purchaseOrders.map(po => po.id === id ? { ...po, status } : po),
     }));

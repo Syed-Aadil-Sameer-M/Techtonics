@@ -27,6 +27,7 @@ export function AdminUsers() {
     email: '',
     department: '',
     role: 'RECEIVER' as BackendRole,
+    phoneNumber: '',
   });
 
   const filtered = users.filter(u => {
@@ -43,7 +44,7 @@ export function AdminUsers() {
   const procurementCount = users.filter(u => u.role === 'PROCUREMENT').length;
 
   const resetAddForm = () => {
-    setForm({ fullName: '', email: '', department: '', role: 'RECEIVER' });
+    setForm({ fullName: '', email: '', department: '', role: 'RECEIVER', phoneNumber: '' });
     setFormError('');
     setTempPassword('');
     setSaving(false);
@@ -186,6 +187,7 @@ export function AdminUsers() {
           <form onSubmit={handleAddUser} className="space-y-4">
             <Input label="Full name" value={form.fullName} onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required />
             <Input label="Email" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required />
+            <Input label="Phone Number (Optional)" type="tel" value={form.phoneNumber} onChange={e => setForm(p => ({ ...p, phoneNumber: e.target.value }))} />
             <Input label="Department" value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} required />
             <Select label="Role" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as BackendRole }))}>
               <option value="RECEIVER">Receiver</option>

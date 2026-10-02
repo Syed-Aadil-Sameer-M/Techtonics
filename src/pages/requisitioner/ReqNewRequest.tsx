@@ -15,15 +15,16 @@ export function ReqNewRequest() {
   const [material, setMaterial] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [location, setLocation] = useState('');
+  const [neededBy, setNeededBy] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!material.trim() || !location.trim() || quantity <= 0) return;
+    if (!material.trim() || !location.trim() || !neededBy || quantity <= 0) return;
     setSubmitting(true);
     try {
-      await createRequest({ material, quantity, location, description: description || undefined });
+      await createRequest({ material, quantity, location, neededBy, description: description || undefined });
       navigate('/req/requests');
     } catch {
       // store.addToast handles error display
@@ -42,12 +43,13 @@ export function ReqNewRequest() {
             <h3 className="text-sm font-semibold text-white mb-4">Request Details</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input label="Material" value={material} onChange={e => setMaterial(e.target.value)} placeholder="e.g. Dell Latitude 5440 Laptop" required />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input label="Quantity" type="number" value={quantity} onChange={e => setQuantity(parseInt(e.target.value) || 0)} min={1} required />
                 <Input label="Delivery Location" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Engineering Bay 2" required />
+                <Input label="Deadline" type="date" value={neededBy} onChange={e => setNeededBy(e.target.value)} required />
               </div>
               <Textarea label="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe what you need and why..." rows={4} />
-              <Button type="submit" size="lg" className="w-full" disabled={submitting || !material.trim() || !location.trim() || quantity <= 0}>
+              <Button type="submit" size="lg" className="w-full" disabled={submitting || !material.trim() || !location.trim() || !neededBy || quantity <= 0}>
                 {submitting ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -80,6 +82,10 @@ export function ReqNewRequest() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-400">Location</span>
                 <span className="text-slate-200">{location || '—'}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Deadline</span>
+                <span className="text-slate-200">{neededBy || '—'}</span>
               </div>
             </div>
           </Card>

@@ -93,6 +93,7 @@ export interface CreateRequestDTO {
   quantity: number;
   location: string;
   description?: string;
+  neededBy?: string;
 }
 
 export type PurchaseOrderStatus = 'CREATED' | 'SENT' | 'COMPLETED' | 'CANCELLED' | 'RECEIVED';

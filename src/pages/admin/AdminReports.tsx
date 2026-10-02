@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { TrendingUp, Package, FileText, Clock } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, RadialBarChart, RadialBar, PieChart, Pie, Cell, Area, AreaChart } from 'recharts';
 import { useStore } from '@/store';
@@ -9,42 +10,54 @@ import { formatCurrency } from '@/lib/status';
 import { ExportButton, type DateRange } from '@/components/shared/ExportButton';
 import { downloadCsv, downloadExcel, downloadPdf, filterByDateRange } from '@/lib/export';
 
-const monthlySpend = [
-  { month: 'Jan', spend: 420000, orders: 8 },
-  { month: 'Feb', spend: 380000, orders: 6 },
-  { month: 'Mar', spend: 510000, orders: 10 },
-  { month: 'Apr', spend: 470000, orders: 7 },
-  { month: 'May', spend: 590000, orders: 12 },
-  { month: 'Jun', spend: 620000, orders: 11 },
-  { month: 'Jul', spend: 540000, orders: 9 },
-  { month: 'Aug', spend: 680000, orders: 14 },
-];
-
-const supplierPerf = [
-  { name: 'TechCorp', value: 95, fill: '#10b981' },
-  { name: 'SteelCo', value: 88, fill: '#0ea5e9' },
-  { name: 'LogiTrans', value: 78, fill: '#f59e0b' },
-  { name: 'OfficePro', value: 92, fill: '#8b5cf6' },
-];
-
-const categorySpend = [
-  { name: 'Electronics', value: 420000, color: '#0ea5e9' },
-  { name: 'Raw Materials', value: 310000, color: '#10b981' },
-  { name: 'Office Supplies', value: 180000, color: '#f59e0b' },
-  { name: 'Logistics', value: 150000, color: '#8b5cf6' },
-  { name: 'Other', value: 52000, color: '#64748b' },
-];
-
 export function AdminReports() {
   const requests = useStore(s => s.requests);
   const purchaseOrders = useStore(s => s.purchaseOrders);
+  const vendors = useStore(s => s.vendors);
 
   const totalOrders = purchaseOrders.length;
   const pendingRequests = requests.filter(r => r.status === 'PENDING').length;
   const completedRequests = requests.filter(r => r.status === 'COMPLETED').length;
   const approvalRate = requests.length > 0 ? Math.round((completedRequests / requests.length) * 100) : 0;
 
+  const monthlySpendData = useMemo(() => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const data = months.map(month => ({ month, spend: 0, orders: 0 }));
+    purchaseOrders.forEach(po => {
+      const date = new Date(po.createdAt || po.date);
+      const monthIdx = date.getMonth();
+      if (!isNaN(monthIdx)) {
+        data[monthIdx].spend += (po.totalValue || 0);
+        data[monthIdx].orders += 1;
+      }
+    });
+    return data.filter(d => d.orders > 0 || d.spend > 0);
+  }, [purchaseOrders]);
+  
+  const monthlySpend = monthlySpendData.length > 0 ? monthlySpendData : [{ month: 'Current', spend: 0, orders: 0 }];
 
+  const supplierPerfData = useMemo(() => {
+    const colors = ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'];
+    return vendors.slice(0, 5).map((v, i) => ({
+      name: v.name,
+      value: v.onTimeRate || 100,
+      fill: colors[i % colors.length]
+    }));
+  }, [vendors]);
+  const supplierPerf = supplierPerfData.length > 0 ? supplierPerfData : [{ name: 'No Vendors', value: 0, fill: '#64748b' }];
+
+  const categorySpendData = useMemo(() => {
+    const categories: Record<string, number> = {};
+    requests.forEach(r => {
+      const cat = r.department || 'Other';
+      categories[cat] = (categories[cat] || 0) + (r.quantity * (r.totalValue || 100)); 
+    });
+    const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'];
+    return Object.entries(categories).map(([name, value], i) => ({
+      name, value, color: colors[i % colors.length]
+    }));
+  }, [requests]);
+  const categorySpend = categorySpendData.length > 0 ? categorySpendData : [{ name: 'None', value: 0, color: '#64748b' }];
 
   const HEADERS = ['PR #', 'Material', 'Qty', 'Department', 'Status', 'Date'];
   const toRows = (items: typeof requests) => items.map(item => [item.prNumber, item.material, item.quantity, item.department, item.status, item.date]);
